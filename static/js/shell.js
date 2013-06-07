@@ -137,6 +137,9 @@ function($, annotation, api, cwd, help, history, input, jobs, status) {
     if (cmd.trim() !== '') {
       annotation.clearAnnotations();
       runCommand(cmd);
+      if (window.webkitNotifications.checkPermission() == 0) {
+         window.webkitNotifications.requestPermission();
+       }
     }
   }
 

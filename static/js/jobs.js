@@ -375,14 +375,42 @@ function($, api, util, input){
       setClass('running');
     }
 
+    function getHiddenProp(){
+        var prefixes = ['webkit','moz','ms','o'];
+        
+        // if 'hidden' is natively supported just return it
+        if ('hidden' in document) return 'hidden';
+        
+        // otherwise loop over all the known prefixes until we find one
+        for (var i = 0; i < prefixes.length; i++){
+            if ((prefixes[i] + 'Hidden') in document) 
+                return prefixes[i] + 'Hidden';
+        }
+    
+        // otherwise it's not supported
+        return null;
+    }
+    
+    function isHidden() {
+        var prop = getHiddenProp();
+        if (!prop) return false;
+        
+        return document[prop];
+    }
+
     function setComplete(exitcode) {
       setClass(exitcode === 0 ? 'complete' : 'failed');
       removeInput();
       removeVTOutput();
+      if (this.historical === false && isHidden() ){
+          window.webkitNotifications.createNotification('../img/chair-tiny.png', this.cmd, exitcode === 0 ? 'Complete' : 'Error').show();
+      }
     }
 
     var jobPublic = {
       job: job,
+      cmd:cmd,
+      historical: historical,
       user: true,
       addOutput: addOutput,
       setRunning: setRunning,

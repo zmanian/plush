@@ -40,23 +40,15 @@ function($, api, util, input, cterm){
 
   var currentTopic = null;
 
-  function blurAll() {
-    $(document.activeElement).blur();
-    blurTopic();
-  }
-  function blurTopic() {
-    if (currentTopic) currentTopic.removeClass('focus');
-  }
   function focusTopic(nextTopic) {
-    if (currentTopic) currentTopic.removeClass('topic focus')
+    if (currentTopic) currentTopic.removeClass('topic')
     currentTopic = nextTopic;
     if (currentTopic) {
-      currentTopic.addClass('topic focus');
+      currentTopic.addClass('topic');
       util.scrollIntoView(scrollback, currentTopic);
+      currentTopic.find('[tabindex]').focus();
     }
   }
-
-  $(window).on('focusin', blurTopic);
 
   function nextTopic(n) {
     var next = currentTopic;
@@ -75,7 +67,6 @@ function($, api, util, input, cterm){
       }
     }
     if (next && next.length) {
-      blurAll();
       focusTopic(next);
     }
   }
@@ -101,23 +92,6 @@ function($, api, util, input, cterm){
     }
   });
 
-  var inputKeydown = input.keyHandler({
-    bindings: {
-      'RETURN': 'sendInput',
-      'SPACE':  function() { return input.STOP_PROPAGATION; }
-    },
-    functions: {
-      sendInput: function(inputElem) {
-        var s = $(inputElem).val() + '\n';
-        jobFromElement(inputElem).sender(s);
-        $(inputElem).val('');
-      }
-    }
-  });
-
-  scrollback.on('keydown', '.input-container input',
-    function(e) { return inputKeydown(e, this); });
-
   scrollback.on('click', '.send-eof',
     function(e) { jobFromElement(this).sender('\x04'); });
   scrollback.on('click', '.send-sigint',
@@ -140,9 +114,13 @@ function($, api, util, input, cterm){
 
   scrollback.on('click', '.job',
     function(e) { jobFromElement(this).takeTopic(); });
-  scrollback.on('focus', '.input-container input',
-    function(e) { jobFromElement(this).takeTopic(); });
 
+  scrollback.on('focusin', '.job',
+    function(e) { $(this).addClass('focus'); });
+  scrollback.on('focusout', '.job',
+    function(e) { $(this).removeClass('focus'); });
+
+  // keydown handler for jobs, even when running
   var jobKeydown = input.keyHandler({
     functions: {
       pageDown:           function(j) { j.scroller(1, SCROLL_PAGE); },
@@ -151,8 +129,8 @@ function($, api, util, input, cterm){
     bindings: {
       'PAGE_DOWN,   ALT+PAGE_DOWN':   'pageDown',
       'PAGE_UP,     ALT+PAGE_UP':     'pageUp',
-      'SPACE,       ALT+SPACE':       'pageDown',
-      'SHIFT+SPACE, ALT+SHIFT+SPACE': 'pageUp',
+      '             ALT+SPACE':       'pageDown',
+      '             ALT+SHIFT+SPACE': 'pageUp',
 
       'END,  ALT+END':    function(j) { j.scroller(1, SCROLL_FULL); },
       'HOME, ALT+HOME':   function(j) { j.scroller(-1, SCROLL_FULL); },
@@ -161,11 +139,6 @@ function($, api, util, input, cterm){
       'ALT+1':            function(j) { j.sizeOutput('tiny'); },
       'ALT+2':            function(j) { j.sizeOutput('page'); },
       'ALT+3':            function(j) { j.sizeOutput('full'); },
-
-      'CTRL+D':           function(j) { j.sender('\x04'); },
-      'CTRL+C':           function(j) { j.signaler('int'); },
-      'CTRL+BACK_SLASH':  function(j) { j.signaler('quit'); },
-      'CTRL+9':           function(j) { j.signaler('kill'); }
     }
   });
 
@@ -175,6 +148,33 @@ function($, api, util, input, cterm){
     return jobKeydown(e, j);
   }
 
+  var forwardingKeys = input.keyHandler({
+    functions: {
+      forward: function() { }
+    },
+    bindings: {
+      'ALT+SPACE,   ALT+SHIFT+SPACE':           'forward',
+      '    PAGE_UP,     PAGE_DOWN':             'forward',
+      'ALT+PAGE_UP, ALT+PAGE_DOWN':             'forward',
+      '    HOME,        END':                   'forward',
+      'ALT+HOME,    ALT+END':                   'forward',
+      'ALT+0, ALT+1, ALT+2, ALT+3':             'forward',
+      'ALT+UP, ALT+DOWN, ALT+LEFT, ALT+RIGHT':  'forward',
+      'ALT+RETURN':                             'forward',
+    }
+  });
+
+  function forwardingKeydown(e) {
+    var r = forwardingKeys(e);
+    if (r !== undefined) {
+      $(window).triggerHandler(e);
+      e.stopImmediatePropagation();
+      e.originalEvent.stopImmediatePropagation();
+        // needed due to bug in jQuery: stop DOM added handlers, too
+      e.preventDefault();
+      return r;
+    }
+  }
 
   var jobCount = 0;
 
@@ -250,7 +250,7 @@ function($, api, util, input, cterm){
       focusTopic(node);
     }
 
-    node.data('jobPrivate', {
+    var jobPrivate = {
       cmd: cmd,
       sender: sender,
       signaler: signaler,
@@ -258,14 +258,16 @@ function($, api, util, input, cterm){
       loadDeferredOutput: loadDeferredOutput,
       scroller: scroller,
       takeTopic: takeTopic
-    });
+    };
+    node.data('jobPrivate', jobPrivate);
 
     var input = node.find('.input-container');
     if (historical) {
       input.remove();
       input = null;
     } else {
-      input.find('input').focus();
+      outputArea.on('keydown', forwardingKeydown);
+      takeTopic();
     }
 
     var lineHeight = null;
@@ -344,11 +346,13 @@ function($, api, util, input, cterm){
     };
 
     function removeOutput() {
-      if (terminalIsFullScreen) {
+      if (terminal) {
         terminal.uninstallKeyboard();
-        terminal.setCursorVisible(false);
+        if (terminalIsFullScreen) {
+          terminal.setCursorVisible(false);
+        }
+        terminal = null;
       }
-      terminal = null;
       fullScreenReplayBuffer = null;
     };
 
@@ -360,6 +364,9 @@ function($, api, util, input, cterm){
     function addOutput(cls, txt) {
       if (terminal === null) {
         terminal = new cterm.Terminal(outputArea, goFullScreen);
+        terminal.io.onVTKeystroke = sender;
+        terminal.io.sendString = sender;
+        terminal.installKeyboard();
       }
       if (terminalIsFullScreen) {
         terminal.interpret(txt);

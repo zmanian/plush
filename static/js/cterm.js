@@ -66,12 +66,16 @@ function($, input){
     this.scrollOnKeystroke = null;          // written
     this.scrollOnOutput = null;             // written
 
-    this.vt_ = new hterm.VT(this);  // set this last, relies on the above!
-    this.vt_.decodeUTF8 = function (str) { return str; };
-      // Monkey patching the VT so that it doesn't try to decode inputs to
-      // interpret(). Note that this will affect the data passed to
+    this.vt = new hterm.VT(this);  // set this here, relies on the above!
+    this.vt.encodeUTF8 = function(str) { return str; };
+    this.vt.decodeUTF8 = function(str) { return str; };
+      // Monkey patching the VT so that it doesn't do the UTF-8 encode/decode.
+      // This is so the terminal doesn't encode characters sent, or decode
+      // inputs to interpret(). Note that this will affect the data passed to
       // copyStringToClipboard() as well: It won't be decoded where it needs
       // to be. However that function causes fall back... so no worries!
+
+    this.keyboard = new hterm.Keyboard(this);
   };
 
   if (TRACE) {
@@ -98,7 +102,7 @@ function($, input){
 
   Terminal.prototype.interpret = function(str) {
     // See Note above about monkey patching decodeUTF8 for why this works
-    this.vt_.interpret(str);
+    this.vt.interpret(str);
   };
 
   Terminal.prototype.getLineCount = function() {
@@ -318,7 +322,15 @@ function($, input){
   Terminal.prototype.vtScrollDown          = fallback('vtScrollDown');
   Terminal.prototype.vtScrollUp            = fallback('vtScrollUp');
 
-
+  Terminal.prototype.installKeyboard = function() {
+    this.keyboard.installKeyboard(this.output_.get(0));
+  };
+  Terminal.prototype.uninstallKeyboard = function() {
+    this.keyboard.installKeyboard(null);
+  };
+  Terminal.prototype.onVTKeystroke = function(str) {
+    this.io.onVTKeystroke(str);
+  }
   return {
     Terminal: Terminal
   };

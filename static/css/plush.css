@@ -424,10 +424,12 @@ h1,h2,h3,h4,blockquote,q {
   max-height: 1000000em;
 }
 
+.job.max-deferred .select-all,
 .job.max-deferred .view-hide,
 .job.max-deferred .view-tiny,
 .job.max-deferred .view-page,
 .job.max-deferred .view-full,
+.job.max-hide .select-all,
 .job.max-hide .view-tiny,
 .job.max-hide .view-page,
 .job.max-hide .view-full,
@@ -494,7 +496,7 @@ h1,h2,h3,h4,blockquote,q {
 
 .job .view-controls {
   float: right;
-  width: 6em;
+  width: 8em;
   height: 1em;
   font-family: "Courier New", Courier, mono;
 }
@@ -808,7 +810,7 @@ ul.horiz-menu li {
   font-size: 90%;
 }
 #help-body #help {
-  top: 2em;;
+  top: 2em;
 }
 #help h1,
 #help h2 {
@@ -843,7 +845,7 @@ ul.horiz-menu li {
 }
 #help td {
   width: 50%;
-  text-align: top;
+  text-align: center;
   vertical-align: top;
 }
 #help dl dt {

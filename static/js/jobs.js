@@ -128,7 +128,8 @@ function($, api, util, input){
     function(e) { jobFromElement(this).signaler('quit'); });
   scrollback.on('click', '.send-sigkill',
     function(e) { jobFromElement(this).signaler('kill'); });
-
+  scrollback.on('click', '.select-all',
+    function(e) { jobFromElement(this).selectOutput(); });
   scrollback.on('click', '.view-hide',
     function(e) { jobFromElement(this).sizeOutput('hide'); });
   scrollback.on('click', '.view-tiny',
@@ -159,6 +160,7 @@ function($, api, util, input){
       'END,  ALT+END':    function(j) { j.scroller(1, SCROLL_FULL); },
       'HOME, ALT+HOME':   function(j) { j.scroller(-1, SCROLL_FULL); },
 
+      'ALT+A':            function(j) { j.selectOutput(); },
       'ALT+0':            function(j) { j.sizeOutput('hide'); },
       'ALT+1':            function(j) { j.sizeOutput('tiny'); },
       'ALT+2':            function(j) { j.sizeOutput('page'); },
@@ -215,6 +217,29 @@ function($, api, util, input){
       api.api('input', {job: job, signal: s}, function() {});
     };
 
+    function selectText(element) {
+        var doc = document;
+    
+        if (doc.body.createTextRange) { // ms
+            var range = doc.body.createTextRange();
+            range.moveToElementText(element);
+            range.select();
+        } else if (window.getSelection) { // moz, opera, webkit
+            var selection = window.getSelection();            
+            var range = doc.createRange();
+            range.selectNodeContents(element);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+    }
+
+    function selectOutput(){
+      if (deferredOutputLoader){
+        loadDeferredOutput();
+      }
+      selectText(output.get(0)); 
+    }
+
     function sizeOutput(m) {
       if (deferredOutputLoader) {
         loadDeferredOutput();
@@ -261,6 +286,7 @@ function($, api, util, input){
       sender: sender,
       signaler: signaler,
       sizeOutput: sizeOutput,
+      selectOutput: selectOutput,
       loadDeferredOutput: loadDeferredOutput,
       scroller: scroller,
       takeTopic: takeTopic

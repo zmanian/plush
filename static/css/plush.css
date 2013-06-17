@@ -496,7 +496,7 @@ h1,h2,h3,h4,blockquote,q {
 
 .job .view-controls {
   float: right;
-  width: 8em;
+  width: 10em;
   height: 1em;
   font-family: "Courier New", Courier, mono;
 }

@@ -457,15 +457,16 @@ function($, api, util, input, cterm){
       setClass(exitcode === 0 ? 'complete' : 'failed');
       removeInput();
       removeOutput();
+    }
     if (!historical) {
-      takingInput = true;
-      addOutput('stdout', '');
-      takeTopic();
+        takingInput = true;
+        addOutput('stdout', '');
+        takeTopic();
     } else {
-      removeInput();
+        removeInput();
     }
     
-    if (this.historical === false && isHidden() ){
+    if (!historical && isHidden()) {
         window.webkitNotifications.createNotification('../img/chair-tiny.png', this.cmd, exitcode === 0 ? 'Complete' : 'Error').show();
     }
 

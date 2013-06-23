@@ -457,6 +457,10 @@ function($, api, util, input, cterm){
       setClass(exitcode === 0 ? 'complete' : 'failed');
       removeInput();
       removeOutput();
+
+      if (!this.historical && isHidden()) {
+          window.webkitNotifications.createNotification('../img/chair-tiny.png', this.cmd, exitcode === 0 ? 'Complete' : 'Error').show();
+      }
     }
     if (!historical) {
         takingInput = true;
@@ -466,9 +470,7 @@ function($, api, util, input, cterm){
         removeInput();
     }
     
-    if (!historical && isHidden()) {
-        window.webkitNotifications.createNotification('../img/chair-tiny.png', this.cmd, exitcode === 0 ? 'Complete' : 'Error').show();
-    }
+
 
     var jobPublic = {
       job: job,

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-define(['jquery', 'api', 'input'], function($, api, input) {
+define(['jquery', 'api', 'input', 'util'], function($, api, input, util) {
   "use strict";
 
   var COMPLETION_DELAY = 50;
@@ -189,7 +189,8 @@ define(['jquery', 'api', 'input'], function($, api, input) {
   }
 
   function insertCompletion(text) {
-    commandline.val(completingPrefix + text + completingPostfix);
+    commandline.val(completingPrefix + util.escapeShellArgument(text) + completingPostfix);
+    // commandline.val(completingPrefix + text + completingPostfix);
       // TODO: should shell escape test here
     var s = completingPrefix.length + text.length;
     commandline[0].setSelectionRange(s,s);

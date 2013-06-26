@@ -459,7 +459,11 @@ function($, api, util, input, cterm){
       removeOutput();
 
       if (!this.historical && isHidden()) {
-          window.webkitNotifications.createNotification('../img/chair-tiny.png', this.cmd, exitcode === 0 ? 'Complete' : 'Error').show();
+          var not = window.webkitNotifications.createNotification('../img/chair-tiny.png', this.cmd, exitcode === 0 ? 'Complete' : 'Error')
+          setTimeout(function(){not.cancel();}, 3000 );
+          not.onclick = function(event){window.focus();not.cancel();};
+          not.show();
+
       }
     }
     if (!historical) {
